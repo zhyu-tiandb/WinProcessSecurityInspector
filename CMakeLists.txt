@@ -99,5 +99,10 @@ if(WPSI_BUILD_TESTS)
         set_tests_properties(wpsi_cli_inspect_name PROPERTIES
             PASS_REGULAR_EXPRESSION "\"processes\""
         )
+
+        add_test(NAME wpsi_cli_inspect_name_text COMMAND wpsi_cli inspect --name wpsi_cli.exe)
+        set_tests_properties(wpsi_cli_inspect_name_text PROPERTIES
+            PASS_REGULAR_EXPRESSION "Session ID"
+        )
     endif()
 endif()

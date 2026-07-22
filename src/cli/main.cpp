@@ -112,27 +112,10 @@ CapturedProcess capture_process(DWORD pid) {
     return captured;
 }
 
-int inspect_process(DWORD pid, bool json, const std::string& outputPath) {
-    const auto captured = capture_process(pid);
-    if (!captured.ok) {
-        std::cerr << "Failed to inspect process. Win32 error: " << captured.error << '\n';
-        return 2;
-    }
-
+void print_process_text(const CapturedProcess& captured) {
     const auto& process = captured.context.process;
     const auto& session = captured.context.session;
     const auto& token = captured.context.token;
-
-    if (json) {
-        wpsi::DiagnosisReport report;
-        report.processes.push_back(captured.context);
-        const auto payload = wpsi::exportDiagnosisReportJson(report) + "\n";
-        if (!outputPath.empty()) {
-            return write_output_file(outputPath, payload) ? 0 : 3;
-        }
-        std::cout << payload;
-        return 0;
-    }
 
     std::wcout << L"[Process]\n";
     std::wcout << L"PID : " << process.pid << L"\n";
@@ -165,7 +148,27 @@ int inspect_process(DWORD pid, bool json, const std::string& outputPath) {
     if (captured.partial) {
         std::wcout << L"\n[Notice]\nPartial data returned. Run as administrator for more complete results.\n";
     }
+}
 
+int inspect_process(DWORD pid, bool json, const std::string& outputPath) {
+    const auto captured = capture_process(pid);
+    if (!captured.ok) {
+        std::cerr << "Failed to inspect process. Win32 error: " << captured.error << '\n';
+        return 2;
+    }
+
+    if (json) {
+        wpsi::DiagnosisReport report;
+        report.processes.push_back(captured.context);
+        const auto payload = wpsi::exportDiagnosisReportJson(report) + "\n";
+        if (!outputPath.empty()) {
+            return write_output_file(outputPath, payload) ? 0 : 3;
+        }
+        std::cout << payload;
+        return 0;
+    }
+
+    print_process_text(captured);
     return 0;
 }
 
@@ -182,9 +185,11 @@ int inspect_by_name(const std::wstring& name, bool json, const std::string& outp
     }
 
     wpsi::DiagnosisReport report;
+    std::vector<CapturedProcess> capturedProcesses;
     for (const auto pid : matches.value) {
         const auto captured = capture_process(pid);
         if (captured.ok) {
+            capturedProcesses.push_back(captured);
             report.processes.push_back(captured.context);
         }
     }
@@ -198,10 +203,12 @@ int inspect_by_name(const std::wstring& name, bool json, const std::string& outp
         return 0;
     }
 
-    for (const auto& process : report.processes) {
-        std::wcout << L"[Process]\n";
-        std::wcout << L"PID : " << process.process.pid << L"\n";
-        std::wcout << L"Name : " << process.process.processName << L"\n\n";
+    for (size_t i = 0; i < capturedProcesses.size(); ++i) {
+        if (i > 0) {
+            std::wcout << L"\n";
+        }
+        print_process_text(capturedProcesses[i]);
+        std::wcout << L"\n";
     }
 
     return report.processes.empty() ? 2 : 0;
