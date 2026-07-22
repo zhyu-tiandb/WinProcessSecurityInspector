@@ -28,6 +28,8 @@ target_include_directories(wpsi_core
 target_link_libraries(wpsi_core
     INTERFACE
         Advapi32
+        User32
+        Wintrust
 )
 
 if(WPSI_BUILD_CLI)
@@ -103,6 +105,33 @@ if(WPSI_BUILD_TESTS)
         add_test(NAME wpsi_cli_inspect_name_text COMMAND wpsi_cli inspect --name wpsi_cli.exe)
         set_tests_properties(wpsi_cli_inspect_name_text PROPERTIES
             PASS_REGULAR_EXPRESSION "Session ID"
+        )
+
+        add_test(NAME wpsi_cli_windows_self COMMAND wpsi_cli windows --pid 0)
+        set_tests_properties(wpsi_cli_windows_self PROPERTIES
+            PASS_REGULAR_EXPRESSION "Windows"
+        )
+
+        add_test(NAME wpsi_cli_tree_self COMMAND wpsi_cli tree --pid 0)
+        set_tests_properties(wpsi_cli_tree_self PROPERTIES
+            PASS_REGULAR_EXPRESSION "Tree"
+        )
+
+        add_test(NAME wpsi_cli_browser_self COMMAND wpsi_cli browser --network-pid 0 --format json)
+        set_tests_properties(wpsi_cli_browser_self PROPERTIES
+            PASS_REGULAR_EXPRESSION "\"browser\""
+        )
+
+        add_test(
+            NAME wpsi_cli_markdown_output_file
+            COMMAND powershell -NoProfile -ExecutionPolicy Bypass -Command
+                "$out = Join-Path $env:CTEST_BINARY_DIRECTORY 'wpsi-inspect-output.md'; Remove-Item -LiteralPath $out -ErrorAction SilentlyContinue; $exe = Join-Path $env:CTEST_BINARY_DIRECTORY 'Debug/wpsi_cli.exe'; & $exe inspect --format markdown --output $out; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; if (!(Test-Path -LiteralPath $out)) { exit 10 }; $text = Get-Content -Raw -LiteralPath $out; if ($text -notmatch 'WPSI Diagnosis Report') { exit 11 }"
+        )
+
+        add_test(
+            NAME wpsi_cli_html_output_file
+            COMMAND powershell -NoProfile -ExecutionPolicy Bypass -Command
+                "$out = Join-Path $env:CTEST_BINARY_DIRECTORY 'wpsi-inspect-output.html'; Remove-Item -LiteralPath $out -ErrorAction SilentlyContinue; $exe = Join-Path $env:CTEST_BINARY_DIRECTORY 'Debug/wpsi_cli.exe'; & $exe inspect --format html --output $out; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; if (!(Test-Path -LiteralPath $out)) { exit 10 }; $text = Get-Content -Raw -LiteralPath $out; if ($text -notmatch '<!doctype html>') { exit 11 }"
         )
     endif()
 endif()

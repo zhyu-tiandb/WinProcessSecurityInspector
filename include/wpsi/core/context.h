@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <optional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -151,6 +152,39 @@ struct WindowInfo {
     FieldValue<std::wstring> desktop;
 };
 
+struct ManifestInfo {
+    FieldValue<std::wstring> requestedExecutionLevel;
+    FieldValue<bool> uiAccess;
+};
+
+struct SignatureInfo {
+    FieldValue<bool> signedFile;
+    FieldValue<bool> valid;
+    FieldValue<std::wstring> signer;
+    FieldValue<std::wstring> issuer;
+    FieldValue<std::wstring> timestamp;
+    FieldValue<std::wstring> sha256;
+};
+
+struct ServiceInfo {
+    std::wstring serviceName;
+    FieldValue<std::wstring> displayName;
+    FieldValue<std::wstring> startType;
+    FieldValue<std::wstring> accountName;
+    FieldValue<std::wstring> serviceType;
+    FieldValue<bool> interactiveDesktopAllowed;
+    FieldValue<std::wstring> state;
+    FieldValue<bool> delayedAutoStart;
+    FieldValue<bool> startedByScm;
+};
+
+struct StartupSourceInfo {
+    std::wstring sourceType;
+    std::wstring name;
+    std::wstring command;
+    std::map<std::wstring, std::wstring> properties;
+};
+
 struct BrowserProcessContext {
     DWORD inputPid = 0;
     BrowserKind browserKind = BrowserKind::Unknown;
@@ -168,6 +202,11 @@ struct ProcessSecurityContext {
     SessionInfo session;
     DesktopInfo desktop;
     std::vector<WindowInfo> windows;
+    std::vector<std::wstring> compatibilityLayers;
+    ManifestInfo manifest;
+    SignatureInfo signature;
+    std::optional<ServiceInfo> service;
+    std::vector<StartupSourceInfo> startupSources;
 };
 
 struct ComparisonResult {

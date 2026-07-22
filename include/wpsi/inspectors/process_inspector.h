@@ -83,6 +83,51 @@ public:
         return result;
     }
 
+    Result<std::vector<DWORD>> childrenOf(DWORD pid) const {
+        Result<std::vector<DWORD>> result;
+        WinHandle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+        if (!snapshot.valid()) {
+            result.ok = false;
+            result.error = {ErrorCode::ApiFailed, GetLastError(), "CreateToolhelp32Snapshot failed"};
+            return result;
+        }
+
+        PROCESSENTRY32W entry {};
+        entry.dwSize = sizeof(entry);
+        if (!Process32FirstW(snapshot.get(), &entry)) {
+            result.ok = false;
+            result.error = {ErrorCode::ApiFailed, GetLastError(), "Process32FirstW failed"};
+            return result;
+        }
+
+        do {
+            if (entry.th32ParentProcessID == pid) {
+                result.value.push_back(entry.th32ProcessID);
+            }
+        } while (Process32NextW(snapshot.get(), &entry));
+
+        return result;
+    }
+
+    Result<std::vector<DWORD>> parentChainOf(DWORD pid) const {
+        Result<std::vector<DWORD>> result;
+        DWORD current = pid;
+        for (int depth = 0; depth < 64; ++depth) {
+            const auto parent = parent_of(current);
+            if (!parent.ok) {
+                result.partial = true;
+                return result;
+            }
+            if (parent.value == 0 || parent.value == current) {
+                return result;
+            }
+            result.value.push_back(parent.value);
+            current = parent.value;
+        }
+        result.partial = true;
+        return result;
+    }
+
     Result<ProcessInfo> inspect(DWORD pid) const {
         Result<ProcessInfo> result;
         result.value.pid = pid;
@@ -162,6 +207,33 @@ private:
             ch = static_cast<wchar_t>(::towlower(ch));
         }
         return value;
+    }
+
+    static Result<DWORD> parent_of(DWORD pid) {
+        Result<DWORD> result;
+        WinHandle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+        if (!snapshot.valid()) {
+            result.ok = false;
+            result.error = {ErrorCode::ApiFailed, GetLastError(), "CreateToolhelp32Snapshot failed"};
+            return result;
+        }
+        PROCESSENTRY32W entry {};
+        entry.dwSize = sizeof(entry);
+        if (!Process32FirstW(snapshot.get(), &entry)) {
+            result.ok = false;
+            result.error = {ErrorCode::ApiFailed, GetLastError(), "Process32FirstW failed"};
+            return result;
+        }
+        do {
+            if (entry.th32ProcessID == pid) {
+                result.value = entry.th32ParentProcessID;
+                return result;
+            }
+        } while (Process32NextW(snapshot.get(), &entry));
+
+        result.ok = false;
+        result.error = {ErrorCode::ProcessNotFound, ERROR_NOT_FOUND, "PID not found in snapshot"};
+        return result;
     }
 
     static void fill_snapshot_fields(DWORD pid, ProcessInfo& info, Result<ProcessInfo>& result) {

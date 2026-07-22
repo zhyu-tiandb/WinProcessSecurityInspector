@@ -46,6 +46,52 @@ public:
                 "Confirm the browser belongs to the intended interactive user."});
         }
 
+        const bool sourceService =
+            context.source->session.sessionZero ||
+            context.source->session.processSessionId == 0 ||
+            context.source->process.serviceName.available ||
+            context.source->service.has_value();
+        const auto targetName = lower_ascii(context.target->process.processName);
+        const bool targetBrowser =
+            targetName == "chrome.exe" || targetName == "msedge.exe" || targetName == "firefox.exe";
+        if (sourceService && targetBrowser && context.source->session.processSessionId != context.target->session.processSessionId) {
+            results.push_back({"R004", DiagnosisSeverity::Critical,
+                "Session 0 service desktop isolation",
+                "A service/session-0 source is targeting a user-session browser.",
+                "Do not directly operate user desktop windows from a service; use a user-session agent or IPC."});
+        }
+
+        if (context.browser && context.browser->mainProcessPid.available &&
+            context.browser->inputPid != 0 && context.browser->inputPid != context.browser->mainProcessPid.value) {
+            results.push_back({"R005", DiagnosisSeverity::Warning,
+                "Browser child process PID",
+                "Input PID is not the browser main process.",
+                "Use the resolved browser main process PID and top-level window for desktop interaction."});
+        }
+
+        if (context.browser && context.browser->mainProcessPid.available &&
+            context.browser->candidateWindows.empty()) {
+            results.push_back({"R006", DiagnosisSeverity::Warning,
+                "No visible browser top-level window",
+                "No visible top-level window was found for the resolved browser main process.",
+                "Continue locating the browser instance through parent process or foreground window evidence."});
+        }
+
+        if (!context.source->compatibilityLayers.empty() || !context.target->compatibilityLayers.empty()) {
+            results.push_back({"R009", DiagnosisSeverity::Notice,
+                "AppCompat compatibility layer",
+                "At least one process has AppCompat compatibility layers configured.",
+                "Check RUNASADMIN/RUNASINVOKER and other layer overrides before diagnosing UAC behavior."});
+        }
+
+        if (context.source->desktop.desktop.available && context.target->desktop.desktop.available &&
+            context.source->desktop.desktop.value != context.target->desktop.desktop.value) {
+            results.push_back({"R010", DiagnosisSeverity::Critical,
+                "Desktop mismatch",
+                "Source and target are associated with different desktops.",
+                "Do not rely on direct window interaction across desktop boundaries."});
+        }
+
         if (comparison.targetAppContainer) {
             results.push_back({"R011", DiagnosisSeverity::Warning,
                 "Target AppContainer",
@@ -141,6 +187,16 @@ private:
         default:
             return 0;
         }
+    }
+
+    static std::string lower_ascii(std::wstring_view text) {
+        std::string value;
+        value.reserve(text.size());
+        for (const auto ch : text) {
+            char out = static_cast<char>(ch >= L'A' && ch <= L'Z' ? ch - L'A' + L'a' : ch);
+            value.push_back(out);
+        }
+        return value;
     }
 };
 

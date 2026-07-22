@@ -57,6 +57,52 @@ bool has_rule(const std::vector<wpsi::RuleResult>& results, const std::string& i
     return false;
 }
 
+void test_rule_engine_detects_phase2_phase3_risks() {
+    auto source = make_process(10, 0, L"S-1-5-18", wpsi::IntegrityLevel::System, false, false);
+    auto target = make_process(20, 1, L"S-1-5-21-user-a", wpsi::IntegrityLevel::Medium, false, false);
+    source.session.sessionZero = true;
+    source.process.serviceName.available = true;
+    source.process.serviceName.value = L"WpsiTestService";
+    target.process.processName = L"chrome.exe";
+    target.desktop.desktop.available = true;
+    target.desktop.desktop.value = L"Default";
+    source.desktop.desktop.available = true;
+    source.desktop.desktop.value = L"Service-0x0-3e7$";
+
+    wpsi::BrowserProcessContext browser;
+    browser.inputPid = 21;
+    browser.mainProcessPid.available = true;
+    browser.mainProcessPid.value = 20;
+    browser.role = wpsi::BrowserProcessRole::NetworkService;
+
+    wpsi::DiagnosisContext diagnosis_context;
+    diagnosis_context.source = source;
+    diagnosis_context.target = target;
+    diagnosis_context.browser = browser;
+
+    wpsi::RuleEngine engine;
+    const auto results = engine.evaluate(diagnosis_context);
+
+    expect_true(has_rule(results, "R004"), "Session 0 service to browser should produce R004");
+    expect_true(has_rule(results, "R005"), "browser child input pid should produce R005");
+    expect_true(has_rule(results, "R006"), "browser without candidate window should produce R006");
+    expect_true(has_rule(results, "R010"), "desktop mismatch should produce R010");
+}
+
+void test_rule_engine_detects_appcompat_layer() {
+    auto process = make_process(30, 1, L"S-1-5-21-user-a", wpsi::IntegrityLevel::Medium, false, false);
+    process.compatibilityLayers.push_back(L"RUNASADMIN");
+
+    wpsi::DiagnosisContext diagnosis_context;
+    diagnosis_context.source = process;
+    diagnosis_context.target = process;
+
+    wpsi::RuleEngine engine;
+    const auto results = engine.evaluate(diagnosis_context);
+
+    expect_true(has_rule(results, "R009"), "AppCompat layer should produce R009");
+}
+
 void test_rule_engine_detects_phase1_risks() {
     auto source = make_process(100, 1, L"S-1-5-21-user-a", wpsi::IntegrityLevel::Medium, false, false);
     auto target = make_process(200, 2, L"S-1-5-21-user-b", wpsi::IntegrityLevel::High, false, true);
@@ -129,6 +175,8 @@ void test_json_exporter_outputs_process_and_rules() {
 
 int main() {
     test_rule_engine_detects_phase1_risks();
+    test_rule_engine_detects_phase2_phase3_risks();
+    test_rule_engine_detects_appcompat_layer();
     test_command_line_redaction_hides_sensitive_values();
     test_browser_role_detection_from_command_line();
     test_json_exporter_outputs_process_and_rules();
