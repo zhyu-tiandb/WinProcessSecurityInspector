@@ -91,6 +91,16 @@ if(WPSI_BUILD_TESTS)
             PASS_REGULAR_EXPRESSION "Comparison"
         )
 
+        add_test(NAME wpsi_cli_compare_name_self COMMAND wpsi_cli compare --name wpsi_cli.exe --name wpsi_cli.exe)
+        set_tests_properties(wpsi_cli_compare_name_self PROPERTIES
+            PASS_REGULAR_EXPRESSION "Comparison"
+        )
+
+        add_test(NAME wpsi_cli_compare_name_pid_self COMMAND wpsi_cli compare --name wpsi_cli.exe --pid 0)
+        set_tests_properties(wpsi_cli_compare_name_pid_self PROPERTIES
+            PASS_REGULAR_EXPRESSION "Comparison"
+        )
+
         add_test(
             NAME wpsi_cli_json_output_file
             COMMAND powershell -NoProfile -ExecutionPolicy Bypass -Command

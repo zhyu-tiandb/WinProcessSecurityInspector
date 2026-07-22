@@ -122,6 +122,12 @@ struct CapturedProcess {
     unsigned long error = 0;
 };
 
+struct ProcessSelector {
+    bool hasPid = false;
+    DWORD pid = 0;
+    std::wstring name;
+};
+
 CapturedProcess capture_process(DWORD pid) {
     wpsi::ProcessInspector processInspector;
     wpsi::SessionInspector sessionInspector;
@@ -183,6 +189,28 @@ CapturedProcess capture_process(DWORD pid) {
         process.partial || session.partial || token.partial || desktop.partial ||
         !token.ok || !windows.ok || service.partial;
     return captured;
+}
+
+bool resolve_selector(const ProcessSelector& selector, DWORD& pid) {
+    if (selector.hasPid) {
+        pid = selector.pid == 0 ? GetCurrentProcessId() : selector.pid;
+        return true;
+    }
+
+    wpsi::ProcessInspector processInspector;
+    const auto matches = processInspector.findByName(selector.name);
+    if (!matches.ok || matches.value.empty()) {
+        return false;
+    }
+
+    for (const auto candidatePid : matches.value) {
+        const auto captured = capture_process(candidatePid);
+        if (captured.ok) {
+            pid = candidatePid;
+            return true;
+        }
+    }
+    return false;
 }
 
 void print_process_text(const CapturedProcess& captured) {
@@ -483,6 +511,7 @@ int main(int argc, char** argv) {
     std::string outputPath;
     std::wstring processName;
     std::vector<DWORD> pids;
+    std::vector<ProcessSelector> compareSelectors;
     for (int i = 2; i < argc; ++i) {
         const std::string argument = argv[i];
         if (argument == "--pid") {
@@ -494,6 +523,7 @@ int main(int argc, char** argv) {
                 pid = GetCurrentProcessId();
             }
             pids.push_back(pid);
+            compareSelectors.push_back({true, pid, L""});
             ++i;
         } else if (argument == "--format") {
             if (i + 1 >= argc) {
@@ -534,7 +564,12 @@ int main(int argc, char** argv) {
                 return 1;
             }
             const std::string rawName = argv[++i];
-            processName.assign(rawName.begin(), rawName.end());
+            std::wstring name(rawName.begin(), rawName.end());
+            if (command == "compare") {
+                compareSelectors.push_back({false, 0, name});
+            } else {
+                processName = std::move(name);
+            }
         } else {
             std::cerr << "Unknown argument: " << argument << '\n';
             return 1;
@@ -542,11 +577,18 @@ int main(int argc, char** argv) {
     }
 
     if (command == "compare") {
-        if (pids.size() < 2) {
-            std::cerr << "compare requires two --pid values\n";
+        if (compareSelectors.size() < 2) {
+            std::cerr << "compare requires two process selectors\n";
             return 1;
         }
-        return compare_processes(pids[0], pids[1], format, outputPath);
+        DWORD sourcePid = 0;
+        DWORD targetPid = 0;
+        if (!resolve_selector(compareSelectors[0], sourcePid) ||
+            !resolve_selector(compareSelectors[1], targetPid)) {
+            std::cerr << "Failed to resolve one or more compare targets\n";
+            return 2;
+        }
+        return compare_processes(sourcePid, targetPid, format, outputPath);
     }
 
     if (command == "browser") {
