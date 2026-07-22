@@ -10,6 +10,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 option(WPSI_BUILD_CLI "Build WPSI command line tool" ON)
 option(WPSI_BUILD_GUI "Build WPSI Qt GUI" OFF)
 option(WPSI_BUILD_TESTS "Build WPSI tests" ON)
@@ -39,6 +43,13 @@ endif()
 
 if(WPSI_BUILD_TESTS)
     enable_testing()
+
+    add_test(
+        NAME wpsi_verify_msvc_runtime
+        COMMAND ${CMAKE_COMMAND}
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/verify_msvc_runtime.cmake
+    )
 
     add_executable(wpsi_unit_tests
         tests/unit/test_phase1_core.cpp
