@@ -88,7 +88,7 @@ if(WPSI_BUILD_TESTS)
 
         add_test(NAME wpsi_cli_compare_self COMMAND wpsi_cli compare --pid 0 --pid 0)
         set_tests_properties(wpsi_cli_compare_self PROPERTIES
-            PASS_REGULAR_EXPRESSION "Comparison"
+            PASS_REGULAR_EXPRESSION "Source Name"
         )
 
         add_test(NAME wpsi_cli_compare_name_self COMMAND wpsi_cli compare --name wpsi_cli.exe --name wpsi_cli.exe)

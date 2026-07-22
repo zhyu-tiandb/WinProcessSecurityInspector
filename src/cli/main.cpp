@@ -399,7 +399,9 @@ int compare_processes(DWORD sourcePid, DWORD targetPid, OutputFormat format, con
     const auto& comparison = *report.comparison;
     std::wcout << L"[Comparison]\n";
     std::wcout << L"Source PID : " << comparison.sourcePid << L"\n";
+    std::wcout << L"Source Name : " << source.context.process.processName << L"\n";
     std::wcout << L"Target PID : " << comparison.targetPid << L"\n";
+    std::wcout << L"Target Name : " << target.context.process.processName << L"\n";
     std::wcout << L"Same Session : " << (comparison.sameSession ? L"Yes" : L"No") << L"\n";
     std::wcout << L"Same User SID : " << (comparison.sameUserSid ? L"Yes" : L"No") << L"\n";
     std::wcout << L"Source IL Lower Than Target : "
