@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "R001",
+      "severity": "WARNING",
+      "enabled": true,
+      "description": "Source process integrity level is lower than target process integrity level."
+    },
+    {
+      "id": "R002",
+      "severity": "ERROR",
+      "enabled": true,
+      "description": "Source and target processes are in different sessions."
+    },
+    {
+      "id": "R003",
+      "severity": "ERROR",
+      "enabled": true,
+      "description": "Source and target processes are running under different user SIDs."
+    },
+    {
+      "id": "R004",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "description": "A service process in Session 0 attempts to interact with a user desktop process."
+    },
+    {
+      "id": "R005",
+      "severity": "WARNING",
+      "enabled": true,
+      "description": "The input browser PID is a child process instead of the browser main process."
+    },
+    {
+      "id": "R006",
+      "severity": "WARNING",
+      "enabled": true,
+      "description": "The target process does not have a visible top-level window."
+    },
+    {
+      "id": "R007",
+      "severity": "WARNING",
+      "enabled": true,
+      "description": "A medium or limited process is associated with administrator-only operations."
+    },
+    {
+      "id": "R008",
+      "severity": "NOTICE",
+      "enabled": true,
+      "description": "The process priority class is lower than normal."
+    },
+    {
+      "id": "R009",
+      "severity": "NOTICE",
+      "enabled": true,
+      "description": "An AppCompat compatibility layer is configured for the target executable."
+    },
+    {
+      "id": "R010",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "description": "Source and target processes are associated with different desktops."
+    },
+    {
+      "id": "R011",
+      "severity": "WARNING",
+      "enabled": true,
+      "description": "The target process is running inside an AppContainer."
+    },
+    {
+      "id": "R012",
+      "severity": "WARNING",
+      "enabled": true,
+      "description": "The source process has no UIAccess while its integrity level is lower than the target process."
+    }
+  ]
+}

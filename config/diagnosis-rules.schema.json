@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WPSI Diagnosis Rules Configuration",
+  "type": "object",
+  "required": ["version", "rules"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "enabled", "description"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^R[0-9]{3}$|^[a-z0-9_]+$"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["INFO", "NOTICE", "WARNING", "ERROR", "CRITICAL"]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

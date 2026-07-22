@@ -1,0 +1,23 @@
+# Build outputs
+build/
+out/
+bin/
+obj/
+*.user
+*.suo
+*.vcxproj.user
+
+# Runtime outputs
+output/logs/
+output/reports/
+*.log
+
+# Local agent/editor metadata
+.agents/
+.codex/
+.vs/
+.vscode/
+
+# OS files
+Thumbs.db
+Desktop.ini
