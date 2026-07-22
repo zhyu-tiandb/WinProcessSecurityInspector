@@ -30,6 +30,10 @@ wpsi_cli.exe windows --pid 1234
 wpsi_cli.exe tree --pid 1234
 ```
 
+完整命令行说明见：
+
+- `docs/user-guide.md`
+
 导出报告：
 
 ```powershell
